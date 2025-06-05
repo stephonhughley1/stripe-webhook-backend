@@ -1,11 +1,8 @@
 import express from 'express';
 import Stripe from 'stripe';
 import bodyParser from 'body-parser';
-import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 
-// Load env variables
-dotenv.config();
 
 const app = express();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2022-11-15' });
