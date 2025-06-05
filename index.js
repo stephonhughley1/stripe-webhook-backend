@@ -42,13 +42,28 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
 
     console.log("✅ Checkout completed for customer:", customerEmail, customerId);
 
-    const { error } = await supabase
+    // Try to update existing user
+    const { data, error } = await supabase
       .from('users')
       .update({ is_pro: true, stripe_customer_id: customerId })
       .eq('email', customerEmail);
 
     if (error) {
       console.error('❌ Failed to update Supabase:', error.message);
+    } else if (data && data.length === 0) {
+      console.log('No user found. Inserting new user...');
+
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert([
+          { email: customerEmail, is_pro: true, stripe_customer_id: customerId }
+        ]);
+
+      if (insertError) {
+        console.error('❌ Failed to insert new user:', insertError.message);
+      } else {
+        console.log('✅ Inserted new user successfully!');
+      }
     } else {
       console.log('✅ Supabase updated successfully for:', customerEmail);
     }
@@ -77,5 +92,4 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
   res.json({ received: true });
 });
 
-// Standard express listen
 app.listen(3000, () => console.log('Server running on port 3000'));
