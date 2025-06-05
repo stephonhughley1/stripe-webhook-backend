@@ -41,15 +41,15 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
 
     console.log("✅ Checkout completed for customer:", customerEmail, customerId);
 
-    // Try to update existing user — NOW with .select() to retrieve data
+    // Try to update existing user
     const { data, error } = await supabase
       .from('users')
       .update({ is_pro: true, stripe_customer_id: customerId })
       .eq('email', customerEmail)
-      .select('*');
+      .select('*');  // Request returned rows for proper conditional check
 
     if (error) {
-      console.error('❌ Failed to update Supabase:', error.message);
+      console.error('❌ Failed to update Supabase:', error);
     } else if (Array.isArray(data) && data.length === 0) {
       console.log('No user found. Inserting new user...');
 
@@ -60,7 +60,7 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
         ]);
 
       if (insertError) {
-        console.error('❌ Failed to insert new user:', insertError.message);
+        console.error('❌ Failed to insert new user:', insertError);
       } else {
         console.log('✅ Inserted new user successfully!');
       }
@@ -83,7 +83,7 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
       .eq('stripe_customer_id', customerId);
 
     if (error) {
-      console.error('❌ Failed to downgrade user:', error.message);
+      console.error('❌ Failed to downgrade user:', error);
     } else {
       console.log('✅ User downgraded successfully');
     }
