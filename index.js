@@ -54,7 +54,7 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
 
     if (error) {
       console.error('❌ Failed to update Supabase:', error.message);
-    } else if (!data || data.length === 0) {
+    } else if (!data) {
       console.log('No user found. Inserting new user...');
 
       const { error: insertError } = await supabase
