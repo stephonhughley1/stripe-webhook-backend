@@ -3,6 +3,12 @@ import Stripe from 'stripe';
 import bodyParser from 'body-parser';
 import { createClient } from '@supabase/supabase-js';
 
+console.log("SUPABASE_URL:", process.env.SUPABASE_URL);
+console.log("SUPABASE_ANON_KEY:", process.env.SUPABASE_ANON_KEY);
+console.log("STRIPE_SECRET_KEY:", process.env.STRIPE_SECRET_KEY);
+console.log("STRIPE_WEBHOOK_SECRET:", process.env.STRIPE_WEBHOOK_SECRET);
+
+
 
 const app = express();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2022-11-15' });
