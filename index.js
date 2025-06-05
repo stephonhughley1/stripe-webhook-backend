@@ -2,17 +2,22 @@ import express from 'express';
 import Stripe from 'stripe';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
+import { createClient } from '@supabase/supabase-js';
 
-// Load your env variables
+// Load env variables
 dotenv.config();
 
 const app = express();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2022-11-15',
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2022-11-15' });
 
-// Use raw body parser for Stripe webhook ONLY
-app.post('/webhook', bodyParser.raw({ type: 'application/json' }), (req, res) => {
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
+
+// Use raw body parser for Stripe webhook
+app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
 
@@ -27,20 +32,46 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), (req, res) =>
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // ✅ Webhook successfully verified
   console.log('✅ Event type received:', event.type);
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    console.log('✅ Checkout session completed:', session);
+
+    const customerId = session.customer;
+    const customerEmail = session.customer_details?.email;
+
+    console.log("✅ Checkout completed for customer:", customerEmail, customerId);
+
+    const { error } = await supabase
+      .from('users')
+      .update({ is_pro: true, stripe_customer_id: customerId })
+      .eq('email', customerEmail);
+
+    if (error) {
+      console.error('❌ Failed to update Supabase:', error.message);
+    } else {
+      console.log('✅ Supabase updated successfully for:', customerEmail);
+    }
   }
 
   if (event.type === 'invoice.payment_succeeded') {
-    console.log('✅ Payment succeeded:', event.data.object);
+    console.log("✅ Subscription payment succeeded");
   }
 
   if (event.type === 'customer.subscription.deleted') {
-    console.log('❌ Subscription cancelled:', event.data.object);
+    const subscription = event.data.object;
+    const customerId = subscription.customer;
+
+    const { error } = await supabase
+      .from('users')
+      .update({ is_pro: false })
+      .eq('stripe_customer_id', customerId);
+
+    if (error) {
+      console.error('❌ Failed to downgrade user:', error.message);
+    } else {
+      console.log('✅ User downgraded successfully');
+    }
   }
 
   res.json({ received: true });
