@@ -3,19 +3,15 @@ const Stripe = require('stripe');
 const bodyParser = require('body-parser');
 const { createClient } = require('@supabase/supabase-js');
 
-// Initialize Express app
 const app = express();
-
-// Initialize Stripe client
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2022-11-15' });
 
-// Initialize Supabase client
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
 );
 
-// Use raw body parser for Stripe webhook verification
+// Use raw body parser for Stripe webhook
 app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
@@ -35,20 +31,18 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-
     const customerId = session.customer;
     const customerEmail = session.customer_details?.email;
 
     console.log("✅ Checkout completed for customer:", customerEmail, customerId);
 
-    // Try to update existing user
     const { data, error } = await supabase
       .from('users')
       .update({ is_pro: true, stripe_customer_id: customerId })
       .eq('email', customerEmail)
-      .select('*');  // Request returned rows for proper conditional check
+      .select('*');
 
-    if (error) {
+    if (error && Object.keys(error).length > 0) {
       console.error('❌ Failed to update Supabase:', error);
     } else if (Array.isArray(data) && data.length === 0) {
       console.log('No user found. Inserting new user...');
@@ -82,7 +76,7 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
       .update({ is_pro: false })
       .eq('stripe_customer_id', customerId);
 
-    if (error) {
+    if (error && Object.keys(error).length > 0) {
       console.error('❌ Failed to downgrade user:', error);
     } else {
       console.log('✅ User downgraded successfully');
