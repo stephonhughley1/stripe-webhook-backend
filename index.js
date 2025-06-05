@@ -6,7 +6,7 @@ const { createClient } = require('@supabase/supabase-js');
 // Initialize Express app
 const app = express();
 
-// Initialize Stripe
+// Initialize Stripe client
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2022-11-15' });
 
 // Initialize Supabase client
@@ -15,7 +15,7 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY
 );
 
-// Use raw body parser for Stripe webhook
+// Use raw body parser for Stripe webhook verification
 app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
@@ -41,11 +41,12 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
 
     console.log("✅ Checkout completed for customer:", customerEmail, customerId);
 
-    // Try to update existing user
+    // Try to update existing user — NOW with .select() to retrieve data
     const { data, error } = await supabase
       .from('users')
       .update({ is_pro: true, stripe_customer_id: customerId })
-      .eq('email', customerEmail);
+      .eq('email', customerEmail)
+      .select();
 
     if (error) {
       console.error('❌ Failed to update Supabase:', error.message);
