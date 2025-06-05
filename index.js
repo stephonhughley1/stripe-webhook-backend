@@ -1,7 +1,8 @@
-import express from 'express';
-import Stripe from 'stripe';
-import bodyParser from 'body-parser';
-import { createClient } from '@supabase/supabase-js';
+const express = require('express');
+const Stripe = require('stripe');
+const bodyParser = require('body-parser');
+const { createClient } = require('@supabase/supabase-js');
+
 
 console.log("SUPABASE_URL:", process.env.SUPABASE_URL);
 console.log("SUPABASE_ANON_KEY:", process.env.SUPABASE_ANON_KEY);
