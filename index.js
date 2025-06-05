@@ -46,7 +46,7 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
       .from('users')
       .update({ is_pro: true, stripe_customer_id: customerId })
       .eq('email', customerEmail)
-      .select();
+      .select('*');
 
     if (error) {
       console.error('❌ Failed to update Supabase:', error.message);
