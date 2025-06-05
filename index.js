@@ -3,15 +3,10 @@ const Stripe = require('stripe');
 const bodyParser = require('body-parser');
 const { createClient } = require('@supabase/supabase-js');
 
-
-console.log("SUPABASE_URL:", process.env.SUPABASE_URL);
-console.log("SUPABASE_ANON_KEY:", process.env.SUPABASE_ANON_KEY);
-console.log("STRIPE_SECRET_KEY:", process.env.STRIPE_SECRET_KEY);
-console.log("STRIPE_WEBHOOK_SECRET:", process.env.STRIPE_WEBHOOK_SECRET);
-
-
-
+// Initialize Express app
 const app = express();
+
+// Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2022-11-15' });
 
 // Initialize Supabase client
@@ -54,7 +49,7 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
 
     if (error) {
       console.error('❌ Failed to update Supabase:', error.message);
-    } else if (!data) {
+    } else if (Array.isArray(data) && data.length === 0) {
       console.log('No user found. Inserting new user...');
 
       const { error: insertError } = await supabase
